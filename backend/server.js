@@ -1,0 +1,97 @@
+const express=require('express')
+const mongoose=require('mongoose')
+const axios=require("axios")
+const cors=require("cors")
+require('dotenv').config()
+
+const WeatherRequest=require('./modules/WeatherRequest')
+
+const app=express()
+const PORT = process.env.PORT || 5000;
+app.use(cors())
+app.use(express.json())
+mongoose.connect(process.env.MONGO_URL, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+})
+const db=mongoose.connection
+
+db.on('error', console.error.bind(console, 'MongoDB connection error:'));
+// CURD
+// create
+
+// loading
+app.post('/api/weather', async(req, res)=>{
+    const {location, startDate, endDate}=req.body
+    // console.log(`Received request body:${req.body}`)
+    if(new Date(startDate)>new Date(endDate)){
+        return res.status(400).json("Start must be behind the end date")
+    }
+    const apiKey = process.env.OPENWEATHER_API_KEY;
+    console.log(`api key is${apiKey}`)
+    const url = `https://api.openweathermap.org/data/2.5/forecast?q=${encodeURIComponent(location)}&appid=${apiKey}&units=metric`;
+    try{
+        const response = await axios.get(url);
+        console.log(`resonse data is ${response.data}`)
+        const forecastData = response.data;
+        const filtered = forecastData.list.filter(entry => {
+        const dt = new Date(entry.dt_txt);
+            return dt >= new Date(startDate) && dt <= new Date(endDate);
+          });
+          
+        const newRequest = new WeatherRequest({
+            location,
+            startDate,
+            endDate,
+            forecastData: filtered
+        });
+        
+        const saved = await newRequest.save();
+        res.status(201).json(saved);
+        
+    }
+    catch(err){
+        console.error(`error msg ${err.message}`)
+        return res.status(404).json({ error: 'Location not found or weather API failed', detail: err.message })
+    }
+})
+// read
+app.get('/api/weather', async(req, res)=>{
+    try {
+        const all = await WeatherRequest.find().sort({ createdAt: -1 });
+        res.json(all);
+      } catch (err) {
+        res.status(500).json({ error: 'Error fetching data' });
+      }
+})
+// update
+app.put('/api/weather/:id', async(req, res)=>{
+    const {location, startDate, endDate}=req.body
+    if (new Date(startDate) > new Date(endDate)) {
+        return res.status(400).json({ error: 'Start date must be before end date' });
+      }
+    try{
+        const updated = await WeatherRequest.findByIdAndUpdate(
+            req.params.id,
+            { location, startDate, endDate },
+            { new: true }
+          );
+          res.json(updated);
+    }
+    catch(error){
+        res.status(500).json({ error: 'Error updating entry' });
+    }
+})
+// delete
+app.delete('/api/weather/:id', async(req, res)=>{
+    try{
+        await WeatherRequest.findByIdAndDelete(req.params.id);
+        res.json({message:"delete successfully"})
+    }
+    catch(error){
+        res.status(500).json({errMsg:`Error in deleting the entry${error}`})
+    }
+})
+
+app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`))
+
