@@ -28,8 +28,21 @@ app.post('/api/weather', async(req, res)=>{
         return res.status(400).json("Start must be behind the end date")
     }
     const apiKey = process.env.OPENWEATHER_API_KEY;
-    console.log(`api key is${apiKey}`)
-    const url = `https://api.openweathermap.org/data/2.5/forecast?q=${encodeURIComponent(location)}&appid=${apiKey}&units=metric`;
+    // console.log(`api key is${apiKey}`)
+    let url;
+    // Match lat,lon format
+    const coordMatch = location.trim().match(/^(-?\d+(\.\d+)?),\s*(-?\d+(\.\d+)?)$/);
+
+    console.log(`location is ${location}`)
+    if (coordMatch) {
+        console.log('coordinate match')
+        const [lat, lon] = location.split(',').map(x => parseFloat(x.trim()));
+        url = `https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&appid=${apiKey}&units=metric`;
+    } else {
+        url = `https://api.openweathermap.org/data/2.5/forecast?q=${encodeURIComponent(location)}&appid=${apiKey}&units=metric`;
+    }
+
+    console.log(`url is ${url}`)
     try{
         const response = await axios.get(url);
         console.log(`resonse data is ${response.data}`)
