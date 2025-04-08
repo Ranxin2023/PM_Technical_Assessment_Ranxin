@@ -11,6 +11,20 @@ function App() {
   const [startDate, setStartDate]=useState('')
   const [endDate, setEndDate]=useState('')
   const [editingId, setEditingId]=useState(null)
+  const resolveLocation=async(input)=>{
+    const GEO_API_KEY=process.env.REACT_APP_GEO_API_KEY
+    const coordMatch=input.trim().match(/^(-?\d+(\.\d+)?),\s*(-?\d+(\.\d+)?)$/)
+    if(coordMatch){
+      return {lat: parseFloat(coordMatch[1]), lon: parseFloat(coordMatch[3])}
+    }
+    const geoUrl = `https://api.openweathermap.org/geo/1.0/direct?q=${encodeURIComponent(input)}&limit=1&appid=${GEO_API_KEY}`;
+    const geoRes = await axios.get(geoUrl);
+    if (geoRes.data && geoRes.data.length > 0) {
+      const { lat, lon } = geoRes.data[0];
+      return { lat, lon };
+    }
+    throw new Error('Could not resolve location.');
+  }
   const fetchWeather=async()=>{
     try{
       const response=await axios.get(API_URL)
@@ -22,10 +36,16 @@ function App() {
       alert("City is not found")
     }
   }
- 
   const handleDelete=async(id)=>{
     await axios.delete(`${API_URL}/${id}`)
     fetchWeather()
+  }
+  const setDefaultDates=()=>{
+    const today=new Date()
+    const future=new Date()
+    future.setDate(today.getDate()+5)
+    setStartDate(today.toISOString().slice(0, 10))
+    setEndDate(future.toISOString().slice(0, 10))
   }
   const handleSubmit=async(e)=>{
     e.preventDefault()
@@ -34,19 +54,20 @@ function App() {
       alert('start date must before end date')
     }
     try {
-      
+      const {lat, lon}=await resolveLocation(location)
+      console.log(`latitide longtitide${lat}, ${lon}`)
+      const locationStr=`${lat}, ${lon}`
       if (editingId) {
-        console.log(`basic info in editingID: ${location} ${startDate} ${endDate}`)
-        await axios.put(`${API_URL}/${editingId}`, { location, startDate, endDate });
+        console.log(`basic info in editingID: ${locationStr} ${startDate} ${endDate}`)
+        await axios.put(`${API_URL}/${editingId}`, { location:locationStr, startDate, endDate });
         setEditingId(null);
       } else {
-        console.log(`basic info in post: ${location} ${startDate} ${endDate}`)
-        await axios.post(API_URL, { location, startDate, endDate });
+        console.log(`basic info in post: ${locationStr} ${startDate} ${endDate}`)
+        await axios.post(API_URL, { location:locationStr, startDate, endDate });
       }
 
       setLocation('');
-      setStartDate('');
-      setEndDate('');
+      setDefaultDates()
       fetchWeather();
     } catch (err) {
       alert('Location not found or invalid input');
@@ -59,11 +80,7 @@ function App() {
     setEditingId(item._id)
   }
   useEffect(() => {
-    const today=new Date()
-    const future=new Date()
-    future.setDate(today.getDate()+5)
-    setStartDate(today.toISOString().slice(0, 10))
-    setEndDate(future.toISOString().slice(0, 10))
+    setDefaultDates()
     if(navigator.geolocation){
       navigator.geolocation.getCurrentPosition(async(position)=>{
         const {longitude, latitude}=position.coords
@@ -111,14 +128,14 @@ function App() {
       <h2>📜 Saved Forecast Requests</h2>
       {weatherData.map((item) => (
         <div key={item._id} style={{ border: '1px solid #ccc', padding: '1rem', marginBottom: '1rem' }}>
-          <p><strong>📍 Location:</strong> {item.location}</p>
-          <p><strong>📅 Dates:</strong> {item.startDate.slice(0,10)} ➡ {item.endDate.slice(0,10)}</p>
+          <p><strong> Location:</strong> {item.location}</p>
+          <p><strong> Dates:</strong> {item.startDate.slice(0,10)} ➡ {item.endDate.slice(0,10)}</p>
           <button onClick={() => handleEdit(item)}>✏️ Edit</button>
           <button onClick={() => handleDelete(item._id)}>🗑️ Delete</button>
 
           {item.forecastData && item.forecastData.length > 0 && (
             <div>
-              <h4>🔮 Forecast:</h4>
+              <h4> Forecast:</h4>
               <ul>
                 {item.forecastData.map((entry, idx) => (
                   <li key={idx}>
