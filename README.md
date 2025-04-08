@@ -6,6 +6,12 @@ A full-stack weather forecasting application that allows users to:
 - Automatically detect user location using browser geolocation
 - Store and manage past weather queries (CRUD operations)
 - Built with **React**, **Node.js**, **Express**, and **MongoDB**
+
+## Features
+### **Flexible location input**
+- City Names: `Beijing`, `New York`, `Tokyo`
+- Coordinates: `40.7128,-74.0060`
+- ZIP codes: `94016`, `10001`
 ## Tech Stack 
 ### Frontend
 - React (Hooks)
@@ -26,7 +32,7 @@ OpenWeatherMap API (for weather + reverse geolocation)
 ## How to get the Openweather API Key
 1. Go to [Openweather Official Link](https://home.openweathermap.org/users/sign_up)
 2. Create an account (or log in)
-3. Visit the [API Keys]((https://home.openweathermap.org/api_keys) section
+3. Visit the [API Keys](https://home.openweathermap.org/api_keys) section
 ## Installation & Setup
 1. Clone the Repo
 

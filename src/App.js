@@ -1,6 +1,8 @@
 import logo from './logo.svg';
 import axios from 'axios'
 import './App.css';
+import countries from './CountryCodes';
+
 import React, { useState, useEffect } from 'react';
 
 const API_URL="http://localhost:5000/api/weather"
@@ -11,11 +13,69 @@ function App() {
   const [startDate, setStartDate]=useState('')
   const [endDate, setEndDate]=useState('')
   const [editingId, setEditingId]=useState(null)
+  const detectLatLonFromZip = async (zipcode) => {
+    // List of countries to try
+    const GEO_API_KEY = process.env.REACT_APP_GEO_API_KEY;
+
+    // // 1. Try OpenWeather direct API (global search)
+    // try {
+    //   const geoUrl = `https://api.openweathermap.org/geo/1.0/direct?q=${zipcode}&limit=1&appid=${GEO_API_KEY}`;
+    //   const res = await axios.get(geoUrl);
+    //   const place = res.data[0];
+    //   if (place) {
+    //     return { lat: parseFloat(place.lat), lon: parseFloat(place.lon) };
+    //   }
+    // } catch (_) {}
+
+    // 2. First try US first explicitly
+    try {
+      const res = await axios.get(`https://api.zippopotam.us/US/${zipcode}`);
+      const place = res.data.places[0];
+      return {
+        lat: parseFloat(place.latitude),
+        lon: parseFloat(place.longitude),
+      };
+    } catch (_) {}
+    // 1. Try OpenWeather with CN hint
+  try {
+    const geoUrl = `https://api.openweathermap.org/geo/1.0/direct?q=${zipcode},CN&limit=1&appid=${GEO_API_KEY}`;
+    const res = await axios.get(geoUrl);
+    const place = res.data[0];
+    if (place) {
+      return { lat: parseFloat(place.lat), lon: parseFloat(place.lon) };
+    }
+  } catch (err) {
+    console.warn(`OpenWeather CN query failed for ${zipcode}:`, err.message);
+  }
+
+    // 3. Try other countries if US fails
+    for (const country of countries) {
+      if (country === 'US') continue; // already tried
+      try {
+        const res = await axios.get(`https://api.zippopotam.us/${country}/${zipcode}`);
+        const place = res.data.places[0];
+        return {
+          lat: parseFloat(place.latitude),
+          lon: parseFloat(place.longitude),
+        };
+      } catch (_) {}
+    }
+
+    // 4. Nothing worked
+    throw new Error('Could not resolve location from ZIP');
+  };
+  
   const resolveLocation=async(input)=>{
     const GEO_API_KEY=process.env.REACT_APP_GEO_API_KEY
     const coordMatch=input.trim().match(/^(-?\d+(\.\d+)?),\s*(-?\d+(\.\d+)?)$/)
     if(coordMatch){
       return {lat: parseFloat(coordMatch[1]), lon: parseFloat(coordMatch[3])}
+    }
+    const zipRegex = /^\d{5,6}$/;
+    if (zipRegex.test(input.trim())) {
+      // Try Zippopotam API for country detection
+      const zipInfo = await detectLatLonFromZip(input.trim());
+      if (zipInfo) return zipInfo;
     }
     const geoUrl = `https://api.openweathermap.org/geo/1.0/direct?q=${encodeURIComponent(input)}&limit=1&appid=${GEO_API_KEY}`;
     const geoRes = await axios.get(geoUrl);
@@ -87,7 +147,7 @@ function App() {
         try {
           // console.log("process.env is", process.env)
           const GEO_API_KEY=process.env.REACT_APP_GEO_API_KEY
-          console.log("default api key", GEO_API_KEY)
+          // console.log("default api key", GEO_API_KEY)
           const geoUrl = `https://api.openweathermap.org/geo/1.0/reverse?lat=${latitude}&lon=${longitude}&limit=1&appid=${GEO_API_KEY}`;
           const geoRes = await axios.get(geoUrl);
           const city = geoRes.data[0]?.name;
