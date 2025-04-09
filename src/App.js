@@ -9,10 +9,11 @@ const API_URL="http://localhost:5000/api/weather"
 function App() {
   const [location, setLocation]=useState('')
   const [weatherData, setWeatherData]=useState([])
-  // const [history, setHistory]=useState([])
+  const [locationInput, setLocationInput] = useState('');
   const [startDate, setStartDate]=useState('')
   const [endDate, setEndDate]=useState('')
   const [editingId, setEditingId]=useState(null)
+  const [mapCoords, setMapCoords] = useState(null);
   const detectLatLonFromZip = async (zipcode) => {
     // List of countries to try
     const GEO_API_KEY = process.env.REACT_APP_GEO_API_KEY;
@@ -97,9 +98,8 @@ function App() {
   const fetchWeather=async()=>{
     try{
       const response=await axios.get(API_URL)
-      
       setWeatherData(response.data)
-      // fetchHistory()
+      
     }
     catch(error){
       alert("City is not found")
@@ -125,19 +125,19 @@ function App() {
     try {
       const {lat, lon}=await resolveLocation(location)
       // console.log(`latitide longtitide${lat}, ${lon}`)
-      const locationStr=`${lat}, ${lon}`
+      const coords=`${lat}, ${lon}`
       if (editingId) {
-        // console.log(`basic info in editingID: ${locationStr} ${startDate} ${endDate}`)
-        await axios.put(`${API_URL}/${editingId}`, { location:locationStr, startDate, endDate });
+        console.log(`basic info in editingID: ${coords} ${startDate} ${endDate} ${locationInput}`)
+        await axios.put(`${API_URL}/${editingId}`, { location:coords, startDate, endDate, locationInput });
         setEditingId(null);
       } else {
-        // console.log(`basic info in post: ${locationStr} ${startDate} ${endDate}`)
-        await axios.post(API_URL, { location:locationStr, startDate, endDate });
+        console.log(`basic info in post: ${coords} ${startDate} ${endDate} ${locationInput}`)
+        await axios.post(API_URL, { location:coords, startDate, endDate, locationInput});
       }
-
+      setMapCoords({lat, lon});
       setLocation('');
       setDefaultDates()
-      fetchWeather();
+      fetchWeather()
     } catch (err) {
       alert('Location not found or invalid input');
     }
@@ -147,6 +147,15 @@ function App() {
     setStartDate(item.startDate.slice(0, 10))
     setEndDate(item.endDate.slice(0, 10))
     setEditingId(item._id)
+  }
+  const handleExport=()=>{
+    const jsonData=JSON.stringify(weatherData, null, 2)
+    const blob = new Blob([jsonData], { type: 'application/json' });
+    const blobUrl = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = blobUrl;
+    anchor.download = `weather_export_${new Date().toISOString().slice(0, 10)}.json`;
+    anchor.click();
   }
   useEffect(() => {
     setDefaultDates()
@@ -160,7 +169,11 @@ function App() {
           const geoUrl = `https://api.openweathermap.org/geo/1.0/reverse?lat=${latitude}&lon=${longitude}&limit=1&appid=${GEO_API_KEY}`;
           const geoRes = await axios.get(geoUrl);
           const city = geoRes.data[0]?.name;
-          if (city) setLocation(city);
+          if (city) {
+            setLocation(city);
+            setLocationInput(city);
+            setMapCoords({ lat: latitude, lon: longitude }); 
+          }
         } catch (err) {
           console.error('Failed to fetch city name from coordinates', err);
         }
@@ -174,38 +187,61 @@ function App() {
       
       
       <h2>📜 Saved Forecast Requests</h2>
-      {weatherData.map((item) => (
-        <div key={item._id} style={{ border: '1px solid #ccc', padding: '1rem', marginBottom: '1rem' }}>
-          <p><strong> Location:</strong> {item.location}</p>
-          <p><strong> Dates:</strong> {item.startDate.slice(0,10)} ➡ {item.endDate.slice(0,10)}</p>
-          <button onClick={() => handleEdit(item)}>✏️ Edit</button>
-          <button onClick={() => handleDelete(item._id)}>🗑️ Delete</button>
+      <div className="weather-chat">
+        <div className="messages">
+          {weatherData.map((item) => (
+            <div key={item._id} style={{ border: '1px solid #ccc', padding: '1rem', marginBottom: '1rem' }}>
+              <p><strong> Location:</strong> {item.locationInput}</p>
+              <p><strong> Dates:</strong> {item.startDate.slice(0,10)} ➡ {item.endDate.slice(0,10)}</p>
+              <button onClick={() => handleEdit(item)}>✏️ Edit</button>
+              <button onClick={() => handleDelete(item._id)}>🗑️ Delete</button>
 
-          {item.forecastData && item.forecastData.length > 0 && (
-            <div>
-              <h4> Forecast:</h4>
-              <ul>
-                {item.forecastData.map((entry, idx) => (
-                  <li key={idx}>
-                    {entry.dt_txt}: {entry.main.temp}°C - {entry.weather[0].description}
-                  </li>
-                ))}
-              </ul>
+              {item.forecastData && item.forecastData.length > 0 && (
+                <div>
+                  <h4> Forecast:</h4>
+                  <ul>
+                    {item.forecastData.map((entry, idx) => (
+                      <li key={idx}>
+                        {entry.dt_txt}: {entry.main.temp}°C - {entry.weather[0].description}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             </div>
-          )}
+          ))}
         </div>
-      ))}
+        
+        {mapCoords &&  mapCoords.lat && mapCoords.lon &&(
+          <iframe
+            title="map"
+            width="100%"
+            height="200"
+            frameBorder="0"
+            style={{ border: 0, marginTop: "1em" }}
+            src={`https://maps.google.com/maps?q=${mapCoords.lat},${mapCoords.lon}&z=12&output=embed`}
+            allowFullScreen
+          ></iframe>
+        )}
+      </div>
       <div className="input-container">
         <form onSubmit={handleSubmit} className="location-form">
           <input
             type="text"
             value={location}
-            onChange={(e) => setLocation(e.target.value)}
+            onChange={(e) => {
+              setLocation(e.target.value)
+              setLocationInput(e.target.value)
+            }}
             placeholder="Enter Location"
             className="location-input"
+            
           />
           <button type="submit" className="submit-btn">Submit</button>
         </form>
+          <div className="button-row">
+            <button className="export-button" onClick={handleExport}>Export as JSON</button>
+          </div>
       </div>
     </div>
   );
