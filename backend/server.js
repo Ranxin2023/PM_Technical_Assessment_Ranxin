@@ -1,3 +1,4 @@
+const path = require("path")
 const express=require('express')
 const mongoose=require('mongoose')
 const axios=require("axios")
@@ -8,6 +9,11 @@ require('dotenv').config({ path: __dirname + '/../.env' });
 const WeatherRequest=require('./modules/WeatherRequest')
 
 const app=express()
+app.use(express.static(path.join(__dirname, "../build")));
+
+app.get("*", (req, res) => {
+  res.sendFile(path.join(__dirname, "../build", "index.html"));
+});
 const PORT = process.env.BACKEND_PORT||5000;
 app.use(cors())
 app.use(express.json())
