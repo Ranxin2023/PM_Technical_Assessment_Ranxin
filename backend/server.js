@@ -9,11 +9,7 @@ require('dotenv').config({ path: __dirname + '/../.env' });
 const WeatherRequest=require('./modules/WeatherRequest')
 
 const app=express()
-app.use(express.static(path.join(__dirname, "../build")));
 
-app.get("*", (req, res) => {
-  res.sendFile(path.join(__dirname, "../build", "index.html"));
-});
 const PORT = process.env.BACKEND_PORT||5000;
 app.use(cors())
 app.use(express.json())
@@ -113,6 +109,15 @@ app.delete('/api/weather/:id', async(req, res)=>{
         res.status(500).json({errMsg:`Error in deleting the entry${error}`})
     }
 })
+// Serve frontend AFTER all API routes
+app.use(express.static(path.join(__dirname, "../build")));
+
+// All API routes are above...
+
+// Catch-all must be the LAST route
+app.get("*", (req, res) => {
+  res.sendFile(path.join(__dirname, "../build", "index.html"));
+});
 
 app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`))
 
