@@ -8,7 +8,7 @@ require('dotenv').config({ path: __dirname + '/../.env' });
 const WeatherRequest=require('./modules/WeatherRequest')
 
 const app=express()
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.BACKEND_PORT||5000;
 app.use(cors())
 app.use(express.json())
 mongoose.connect(process.env.MONGO_URL, {
@@ -23,8 +23,8 @@ db.on('error', console.error.bind(console, 'MongoDB connection error:'));
 
 // loading
 app.post('/api/weather', async(req, res)=>{
-    const {location, startDate, endDate}=req.body
-    // console.log(`Received request body:${req.body}`)
+    const {location, startDate, endDate, locationInput}=req.body
+    console.log(`Received request body:${JSON.stringify(req.body)}`)
     if(new Date(startDate)>new Date(endDate)){
         return res.status(400).json("Start must be behind the end date")
     }
@@ -55,9 +55,10 @@ app.post('/api/weather', async(req, res)=>{
           
         const newRequest = new WeatherRequest({
             location,
+            locationInput,
             startDate,
             endDate,
-            forecastData: filtered
+            forecastData: filtered, 
         });
         
         const saved = await newRequest.save();
@@ -80,14 +81,14 @@ app.get('/api/weather', async(req, res)=>{
 })
 // update
 app.put('/api/weather/:id', async(req, res)=>{
-    const {location, startDate, endDate}=req.body
+    const {location, startDate, endDate, locationInput}=req.body
     if (new Date(startDate) > new Date(endDate)) {
         return res.status(400).json({ error: 'Start date must be before end date' });
       }
     try{
         const updated = await WeatherRequest.findByIdAndUpdate(
             req.params.id,
-            { location, startDate, endDate },
+            { location, locationInput, startDate, endDate },
             { new: true }
           );
           res.json(updated);
