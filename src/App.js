@@ -66,25 +66,34 @@ function App() {
   };
   
   const resolveLocation=async(input)=>{
-    const GEO_API_KEY=process.env.REACT_APP_GEO_API_KEY
+    
+    // 1. Coordinate input (e.g., "39.90, 116.39")
     const coordMatch=input.trim().match(/^(-?\d+(\.\d+)?),\s*(-?\d+(\.\d+)?)$/)
     if(coordMatch){
       return {lat: parseFloat(coordMatch[1]), lon: parseFloat(coordMatch[3])}
     }
+    // 2. Search by zip
     const zipRegex = /^\d{5,6}$/;
     if (zipRegex.test(input.trim())) {
       // Try Zippopotam API for country detection
-      const zipInfo = await detectLatLonFromZip(input.trim());
+      const zipInfo = await detectLatLonFromZip(input.trim())
       if (zipInfo) return zipInfo;
     }
-    const geoUrl = `https://api.openweathermap.org/geo/1.0/direct?q=${encodeURIComponent(input)}&limit=1&appid=${GEO_API_KEY}`;
-    const geoRes = await axios.get(geoUrl);
-    if (geoRes.data && geoRes.data.length > 0) {
-      const { lat, lon } = geoRes.data[0];
-      return { lat, lon };
+    // 3. Search by landmark, city, etc.
+    try {
+      const OPENCAGE_API_KEY=process.env.REACT_APP_OPENCAGE_API_KEY
+      // console.log(`opencage api key: ${OPENCAGE_API_KEY}`)
+      const openCageRes = await axios.get(`https://api.opencagedata.com/geocode/v1/json?q=${encodeURIComponent(input)}&key=${OPENCAGE_API_KEY}&limit=1`);
+      if (openCageRes.data.results.length > 0) {
+        const { lat, lng } = openCageRes.data.results[0].geometry;
+        return { lat, lon: lng };
+      }
+    } catch (err) {
+      console.error("Geocoding failed:", err);
     }
     throw new Error('Could not resolve location.');
   }
+
   const fetchWeather=async()=>{
     try{
       const response=await axios.get(API_URL)
@@ -109,20 +118,20 @@ function App() {
   }
   const handleSubmit=async(e)=>{
     e.preventDefault()
-    console.log(`basic info: ${location} ${startDate} ${endDate}`)
+    // console.log(`basic info: ${location} ${startDate} ${endDate}`)
     if(new Date(startDate)>new Date(endDate)){
       alert('start date must before end date')
     }
     try {
       const {lat, lon}=await resolveLocation(location)
-      console.log(`latitide longtitide${lat}, ${lon}`)
+      // console.log(`latitide longtitide${lat}, ${lon}`)
       const locationStr=`${lat}, ${lon}`
       if (editingId) {
-        console.log(`basic info in editingID: ${locationStr} ${startDate} ${endDate}`)
+        // console.log(`basic info in editingID: ${locationStr} ${startDate} ${endDate}`)
         await axios.put(`${API_URL}/${editingId}`, { location:locationStr, startDate, endDate });
         setEditingId(null);
       } else {
-        console.log(`basic info in post: ${locationStr} ${startDate} ${endDate}`)
+        // console.log(`basic info in post: ${locationStr} ${startDate} ${endDate}`)
         await axios.post(API_URL, { location:locationStr, startDate, endDate });
       }
 
@@ -163,28 +172,7 @@ function App() {
     <div className="App">
       <h1>Weather App</h1>
       
-      <form onSubmit={handleSubmit} style={{ marginBottom: '2rem' }}>
-        <input
-          type="text"
-          placeholder="Enter Location"
-          value={location}
-          onChange={(e) => setLocation(e.target.value)}
-          required
-        />
-        <input
-          type="date"
-          value={startDate}
-          onChange={(e) => setStartDate(e.target.value)}
-          required
-        />
-        <input
-          type="date"
-          value={endDate}
-          onChange={(e) => setEndDate(e.target.value)}
-          required
-        />
-        <button type="submit">{editingId ? 'Update' : 'Submit'}</button>
-      </form>
+      
       <h2>📜 Saved Forecast Requests</h2>
       {weatherData.map((item) => (
         <div key={item._id} style={{ border: '1px solid #ccc', padding: '1rem', marginBottom: '1rem' }}>
@@ -207,6 +195,18 @@ function App() {
           )}
         </div>
       ))}
+      <div className="input-container">
+        <form onSubmit={handleSubmit} className="location-form">
+          <input
+            type="text"
+            value={location}
+            onChange={(e) => setLocation(e.target.value)}
+            placeholder="Enter Location"
+            className="location-input"
+          />
+          <button type="submit" className="submit-btn">Submit</button>
+        </form>
+      </div>
     </div>
   );
 }
