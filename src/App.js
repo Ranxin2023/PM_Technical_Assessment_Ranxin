@@ -120,9 +120,7 @@ function App() {
   const handleSubmit=async(e)=>{
     e.preventDefault()
     // console.log(`basic info: ${location} ${startDate} ${endDate}`)
-    if(new Date(startDate)>new Date(endDate)){
-      alert('start date must before end date')
-    }
+    
     try {
       const {lat, lon}=await resolveLocation(location)
       // console.log(`latitide longtitide${lat}, ${lon}`)
@@ -165,6 +163,7 @@ function App() {
     anchor.download = `weather_export_${new Date().toISOString().slice(0, 10)}.json`;
     anchor.click();
   }
+
   useEffect(() => {
     setDefaultDates()
     if(navigator.geolocation){
@@ -192,7 +191,15 @@ function App() {
   return (
     <div className="App">
       <h1>Weather App</h1>
-      
+      <p style={{ fontStyle: "italic", fontSize: "0.9em" }}>by Ranxin Li</p>
+      <button
+        onClick={() =>
+          window.open("https://www.linkedin.com/school/pmaccelerator/", "_blank")
+        }
+        className="info-button"
+      >
+        ℹ️ PM Accelerator Info
+      </button>
       
       <h2>📜 Saved Forecast Requests</h2>
       <div className="weather-chat">
