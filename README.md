@@ -12,6 +12,7 @@ A full-stack weather forecasting application that allows users to:
 - City Names: `Beijing`, `New York`, `Tokyo`
 - Coordinates: `40.7128,-74.0060`
 - ZIP codes: `94016`, `10001`
+
 ## Tech Stack 
 ### Frontend
 - React (Hooks)
@@ -33,6 +34,12 @@ OpenWeatherMap API (for weather + reverse geolocation)
 1. Go to [Openweather Official Link](https://home.openweathermap.org/users/sign_up)
 2. Create an account (or log in)
 3. Visit the [API Keys](https://home.openweathermap.org/api_keys) section
+
+## How to Set up Mongo DB
+1. Download from [https://www.mongodb.com/try/download/community](https://www.mongodb.com/try/download/community)
+2. Install and start MongoDB on the default port (`mongodb://localhost:27017`)
+3. Or use [MongoDB Atlas](https://www.mongodb.com/cloud/atlas) for cloud-hosted DB
+
 ## Installation & Setup
 1. Clone the Repo
 
@@ -80,3 +87,4 @@ weather-app/
 │   └── index.js
 
 ```
+

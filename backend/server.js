@@ -2,7 +2,8 @@ const express=require('express')
 const mongoose=require('mongoose')
 const axios=require("axios")
 const cors=require("cors")
-require('dotenv').config()
+require('dotenv').config({ path: __dirname + '/../.env' });
+
 
 const WeatherRequest=require('./modules/WeatherRequest')
 
