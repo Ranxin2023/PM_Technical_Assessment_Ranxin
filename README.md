@@ -30,9 +30,10 @@ Mongoose + MongoDB
 
 API Used
 OpenWeatherMap API (for weather + reverse geolocation)
-## How to get the Openweather API Key
+## How to get each api keys
+### How to get the Openweather API Key
 1. Go to [Openweather Official Link](https://home.openweathermap.org/users/sign_up)
-2. Create an account (or log in)
+2. Click **Sign Up** or **Log In**
 3. Visit the [API Keys](https://home.openweathermap.org/api_keys) section
 
 ## How to Set up Mongo DB
