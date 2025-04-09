@@ -19,16 +19,14 @@ const db=mongoose.connection
 
 db.on('error', console.error.bind(console, 'MongoDB connection error:'));
 // CURD
-// create
-
-// loading
+// create and loading
 app.post('/api/weather', async(req, res)=>{
     const {location, startDate, endDate, locationInput}=req.body
     console.log(`Received request body:${JSON.stringify(req.body)}`)
     if(new Date(startDate)>new Date(endDate)){
         return res.status(400).json("Start must be behind the end date")
     }
-    const apiKey = process.env.OPENWEATHER_API_KEY;
+    const apiKey = process.env.REACT_APP_OPENWEATHER_API_KEY;
     // console.log(`api key is${apiKey}`)
     let url;
     // Match lat,lon format
@@ -70,6 +68,7 @@ app.post('/api/weather', async(req, res)=>{
         return res.status(404).json({ error: 'Location not found or weather API failed', detail: err.message })
     }
 })
+
 // read
 app.get('/api/weather', async(req, res)=>{
     try {
@@ -97,6 +96,7 @@ app.put('/api/weather/:id', async(req, res)=>{
         res.status(500).json({ error: 'Error updating entry' });
     }
 })
+
 // delete
 app.delete('/api/weather/:id', async(req, res)=>{
     try{

@@ -12,11 +12,14 @@ A full-stack weather forecasting application that allows users to:
 - Looks like a conversational weather assistant
 
 ## Features
-### **Flexible location input**
-- City Names: `Beijing`, `New York`, `Tokyo`
-- Coordinates: `40.7128,-74.0060`
-- ZIP codes: `94016`, `10001`
-
+- **Flexible location input**
+    - City Names: `Beijing`, `New York`, `Tokyo`
+    - Coordinates: `40.7128,-74.0060`
+    - ZIP codes: `94016`, `10001`
+- Full **CRUD operations** (Create, Read, Update, Delete)
+- Live weather forecast using OpenWeatherMap’s `5-day/3-hour` API
+- Geolocation support: shows weather for your current position by default
+- Resets date input automatically after every successful submission
 ## Tech Stack 
 ### Frontend
 - React (Hooks)
