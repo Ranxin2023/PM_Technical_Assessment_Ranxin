@@ -10,7 +10,7 @@ const mapContainerStyle = {
   height: '400px',
 };
 const center = { lat: 37.7749, lng: -122.4194 };
-const API_URL="http://localhost:5000/api/weather"
+const API_URL="https://pm-technical-assessment-ranxin.onrender.com/api/weather/api/weather"
 function App() {
   const [location, setLocation]=useState('')
   const [locationInput, setLocationInput] = useState('');
