@@ -2,9 +2,14 @@ import logo from './logo.svg';
 import axios from 'axios'
 import './App.css';
 import countries from './CountryCodes';
-
+import { GoogleMap, useLoadScript, Marker } from '@react-google-maps/api';
 import React, { useState, useEffect } from 'react';
-
+const libraries = ['places'];
+const mapContainerStyle = {
+  width: '100%',
+  height: '400px',
+};
+const center = { lat: 37.7749, lng: -122.4194 };
 const API_URL="http://localhost:5000/api/weather"
 function App() {
   const [location, setLocation]=useState('')
@@ -14,21 +19,17 @@ function App() {
   const [endDate, setEndDate]=useState('')
   const [editingId, setEditingId]=useState(null)
   const [mapCoords, setMapCoords] = useState(null);
+  const { isLoaded } = useLoadScript({
+    googleMapsApiKey: process.env.REACT_APP_GOOGLE_MAPS_API_KEY,
+    libraries,
+  });
   const detectLatLonFromZip = async (zipcode) => {
     // List of countries to try
     const GEO_API_KEY = process.env.REACT_APP_GEO_API_KEY;
 
-    // // 1. Try OpenWeather direct API (global search)
-    // try {
-    //   const geoUrl = `https://api.openweathermap.org/geo/1.0/direct?q=${zipcode}&limit=1&appid=${GEO_API_KEY}`;
-    //   const res = await axios.get(geoUrl);
-    //   const place = res.data[0];
-    //   if (place) {
-    //     return { lat: parseFloat(place.lat), lon: parseFloat(place.lon) };
-    //   }
-    // } catch (_) {}
+    
 
-    // 2. First try US first explicitly
+    // 1. First try US first explicitly
     try {
       const res = await axios.get(`https://api.zippopotam.us/US/${zipcode}`);
       const place = res.data.places[0];
@@ -37,7 +38,7 @@ function App() {
         lon: parseFloat(place.longitude),
       };
     } catch (_) {}
-    // 1. Try OpenWeather with CN hint
+    // 2. Try OpenWeather with CN hint
   try {
     const geoUrl = `https://api.openweathermap.org/geo/1.0/direct?q=${zipcode},CN&limit=1&appid=${GEO_API_KEY}`;
     const res = await axios.get(geoUrl);
@@ -142,10 +143,17 @@ function App() {
       alert('Location not found or invalid input');
     }
   }
+  const handleMapClick = (event) => {
+    const clickedLat = event.latLng.lat();
+    const clickedLng = event.latLng.lng();
+    setMapCoords({ lat: clickedLat, lon: clickedLng });
+    setLocation(`${clickedLat}, ${clickedLng}`);
+    setLocationInput(`${clickedLat}, ${clickedLng}`);
+  };
   const handleEdit=(item)=>{
     setLocation(item.location)
-    setStartDate(item.startDate.slice(0, 10))
-    setEndDate(item.endDate.slice(0, 10))
+    // setStartDate(item.startDate.slice(0, 10))
+    // setEndDate(item.endDate.slice(0, 10))
     setEditingId(item._id)
   }
   const handleExport=()=>{
@@ -203,6 +211,11 @@ function App() {
                     {item.forecastData.map((entry, idx) => (
                       <li key={idx}>
                         {entry.dt_txt}: {entry.main.temp}°C - {entry.weather[0].description}
+                        <img 
+                          src={`http://openweathermap.org/img/wn/${entry.weather[0].icon}@2x.png`} 
+                          alt={entry.weather[0].description} 
+                          style={{ width: '40px', verticalAlign: 'middle', marginLeft: '10px' }} 
+                        />
                       </li>
                     ))}
                   </ul>
@@ -212,17 +225,16 @@ function App() {
           ))}
         </div>
         
-        {mapCoords &&  mapCoords.lat && mapCoords.lon &&(
-          <iframe
-            title="map"
-            width="100%"
-            height="200"
-            frameBorder="0"
-            style={{ border: 0, marginTop: "1em" }}
-            src={`https://maps.google.com/maps?q=${mapCoords.lat},${mapCoords.lon}&z=12&output=embed`}
-            allowFullScreen
-          ></iframe>
-        )}
+        {isLoaded && mapCoords && (
+            <GoogleMap
+              mapContainerStyle={mapContainerStyle}
+              zoom={10}
+              center={{ lat: mapCoords.lat, lng: mapCoords.lon }}
+              onClick={handleMapClick}
+            >
+              <Marker position={{ lat: mapCoords.lat, lng: mapCoords.lon }} />
+            </GoogleMap>
+          )}
       </div>
       <div className="input-container">
         <form onSubmit={handleSubmit} className="location-form">
